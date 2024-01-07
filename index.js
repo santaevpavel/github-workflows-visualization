@@ -14,6 +14,7 @@ async function main() {
   let graph = graphviz.digraph("G");
   graph.set("layout", "dot")
   graph.set("rankdir", "LR")
+  //graph.set("concentrate", true)
   
   // Adding workflow
   workflows.forEach(workflow => {
@@ -22,6 +23,7 @@ async function main() {
     graph.addCluster(workflow.clusterId)
     graph.getCluster(workflow.clusterId).set("style", "filled")
     graph.getCluster(workflow.clusterId).set("label", workflow.filename)
+    //graph.getCluster(workflow.clusterId).set("rank", "min")
   })
   // Adding triggers
   workflows.forEach(workflow => {
@@ -53,9 +55,28 @@ async function main() {
         workflows.filter((w2) => w2.filename === usedWorkflowName)
           .forEach((w2) => {
             let firstJob = Object.entries(w2.jobs)[0]
-            graph.addEdge(job.nodeId, firstJob[1].nodeId, { label: jobName, style: "dashed" })
+            graph.addEdge(job.nodeId, firstJob[1].nodeId, { label: jobName, style: "dashed", constraint: false })
             graph.getNode(job.nodeId).set("style", "dashed")
           })
+      }
+    })
+  })
+  // Adding jobs dependencies
+  workflows.forEach(workflow => {
+    Object.entries(workflow.jobs).forEach(([jobName, job]) => {
+      let needs = []
+      if (job.needs !== undefined) {
+
+        if (typeof job.needs === 'string') {
+          needs.push(job.needs)
+        } else {
+          needs = job.needs
+        }
+        needs.forEach(need => {
+          //console.log(workflow.filename + " " + need)
+          let needJob = workflow.jobs[need].nodeId
+          graph.addEdge(needJob, job.nodeId)
+        })
       }
     })
   })

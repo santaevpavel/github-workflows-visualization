@@ -1,0 +1,16 @@
+{
+  "name": "github-workflows-visualization",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "node index.js"
+  },
+  "author": "Santaev Pavel",
+  "license": "ISC",
+  "dependencies": {
+    "graphviz": "^0.0.9",
+    "minimist": "^1.2.8",
+    "yaml": "^2.3.4"
+  }
+}

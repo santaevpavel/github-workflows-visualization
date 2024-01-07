@@ -22,7 +22,13 @@ async function main() {
     graph.addCluster(workflow.clusterId)
     graph.getCluster(workflow.clusterId).set("style", "filled")
     graph.getCluster(workflow.clusterId).set("label", workflow.filename)
-    
+  })
+  // Adding triggers
+  workflows.forEach(workflow => {
+    for (const on in workflow.on) {
+      graph.getCluster(workflow.clusterId)
+        .addNode(normalizeName(workflow.filename.concat(on)), { label: on, shape: "diamond", style: "filled", fillcolor: "lightyellow" })
+    }
   })
   // Adding jobs
   workflows.forEach(workflow => {
@@ -47,7 +53,8 @@ async function main() {
         workflows.filter((w2) => w2.filename === usedWorkflowName)
           .forEach((w2) => {
             let firstJob = Object.entries(w2.jobs)[0]
-            graph.addEdge(job.nodeId, firstJob[1].nodeId, { label: jobName })
+            graph.addEdge(job.nodeId, firstJob[1].nodeId, { label: jobName, style: "dashed" })
+            graph.getNode(job.nodeId).set("style", "dashed")
           })
       }
     })

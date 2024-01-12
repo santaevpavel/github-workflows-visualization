@@ -14,6 +14,7 @@ async function main() {
   let graph = graphviz.digraph("G");
   graph.set("layout", "dot")
   graph.set("rankdir", "LR")
+  graph.set("compound", "true")
   
   // Adding workflow
   workflows.forEach(workflow => {
@@ -26,8 +27,10 @@ async function main() {
   // Adding triggers
   workflows.forEach(workflow => {
     for (const on in workflow.on) {
+      let triggerId = normalizeName(workflow.filename.concat(on))
+      //workflow.on[on].triggerId = triggerId
       graph.getCluster(workflow.clusterId)
-        .addNode(normalizeName(workflow.filename.concat(on)), { label: on, shape: "diamond", style: "filled", fillcolor: "lightyellow" })
+        .addNode(triggerId, { label: on, shape: "diamond", style: "filled", fillcolor: "lightyellow" })
     }
   })
   // Adding jobs
@@ -53,7 +56,8 @@ async function main() {
         workflows.filter((w2) => w2.filename === usedWorkflowName)
           .forEach((w2) => {
             let firstJob = Object.entries(w2.jobs)[0]
-            graph.addEdge(job.nodeId, firstJob[1].nodeId, { label: jobName, style: "dashed", constraint: false })
+            let triggerId = normalizeName(w2.filename.concat("workflow_call"))
+            graph.addEdge(job.nodeId, triggerId, { label: jobName, style: "dashed", constraint: false, lhead: w2.clusterId })
             graph.getNode(job.nodeId).set("style", "dashed")
           })
       }

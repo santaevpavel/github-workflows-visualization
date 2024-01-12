@@ -15,6 +15,7 @@ async function main() {
   graph.set("layout", "dot")
   graph.set("rankdir", "LR")
   graph.set("compound", "true")
+  graph.set("ranksep", 3)
   
   // Adding workflow
   workflows.forEach(workflow => {
@@ -26,11 +27,18 @@ async function main() {
   })
   // Adding triggers
   workflows.forEach(workflow => {
+    var triggers = []
     for (const on in workflow.on) {
       let triggerId = normalizeName(workflow.filename.concat(on))
-      //workflow.on[on].triggerId = triggerId
+      triggers.push(triggerId)
       graph.getCluster(workflow.clusterId)
-        .addNode(triggerId, { label: on, shape: "diamond", style: "filled", fillcolor: "lightyellow" })
+        .addNode(triggerId, { label: on, shape: "diamond", style: "filled", fillcolor: "lightyellow", width: 3 })
+    }
+    for (let i = 0; i < triggers.length - 1; i++) {
+      let first = normalizeName(triggers[i])
+      let next = normalizeName(triggers[i + 1])
+      //graph.getCluster(workflow.clusterId)
+      //  .addEdge(first, next, { style: "invis" })
     }
   })
   // Adding jobs
@@ -44,7 +52,7 @@ async function main() {
         jobLabel = job.name
       }
       graph.getCluster(workflow.clusterId)
-        .addNode(job.nodeId, { label: jobLabel })
+        .addNode(job.nodeId, { label: jobLabel, width: 3 })
     })
   })
   // Adding dependencies
@@ -57,7 +65,8 @@ async function main() {
           .forEach((w2) => {
             let firstJob = Object.entries(w2.jobs)[0]
             let triggerId = normalizeName(w2.filename.concat("workflow_call"))
-            graph.addEdge(job.nodeId, triggerId, { label: jobName, style: "dashed", constraint: false, lhead: w2.clusterId })
+            //graph.addEdge(job.nodeId, triggerId, { label: jobName, style: "dashed", constraint: false, lhead: w2.clusterId })
+            graph.addEdge(job.nodeId, triggerId, { style: "dashed", constraint: true, lhead: w2.clusterId })
             graph.getNode(job.nodeId).set("style", "dashed")
           })
       }

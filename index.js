@@ -14,7 +14,6 @@ async function main() {
   let graph = graphviz.digraph("G");
   graph.set("layout", "dot")
   graph.set("rankdir", "LR")
-  //graph.set("concentrate", true)
   
   // Adding workflow
   workflows.forEach(workflow => {
@@ -23,7 +22,6 @@ async function main() {
     graph.addCluster(workflow.clusterId)
     graph.getCluster(workflow.clusterId).set("style", "filled")
     graph.getCluster(workflow.clusterId).set("label", workflow.filename)
-    //graph.getCluster(workflow.clusterId).set("rank", "min")
   })
   // Adding triggers
   workflows.forEach(workflow => {

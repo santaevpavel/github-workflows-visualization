@@ -23,7 +23,7 @@ async function main() {
     workflow.clusterId = "cluster_".concat(normalizeName(workflow.filename))
     graph.addCluster(workflow.clusterId)
     graph.getCluster(workflow.clusterId).set("style", "filled")
-    graph.getCluster(workflow.clusterId).set("label", workflow.filename)
+    graph.getCluster(workflow.clusterId).set(`label`, `${workflow.name}\n(${workflow.filename})`)
   })
   // Adding triggers
   workflows.forEach(workflow => {

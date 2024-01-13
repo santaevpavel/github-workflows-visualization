@@ -51,6 +51,12 @@ async function main() {
       } else {
         jobLabel = job.name
       }
+      let reusedWorkflow = getReusedWorkflow(job)
+      if (reusedWorkflow === null) {
+        jobLabel
+      } else {
+        jobLabel = jobLabel + "\n(" + reusedWorkflow + ")"
+      }
       graph.getCluster(workflow.clusterId)
         .addNode(job.nodeId, { label: jobLabel, width: 3 })
     })
@@ -58,14 +64,12 @@ async function main() {
   // Adding dependencies
   workflows.forEach(workflow => {
     Object.entries(workflow.jobs).forEach(([jobName, job]) => {
-      if (job.uses !== undefined && job.uses.includes("./")) {
-        let idx = job.uses.lastIndexOf('/');
-        let usedWorkflowName = job.uses.substring(idx + 1);
+      let usedWorkflowName = getReusedWorkflow(job);
+      if (usedWorkflowName !== null) {
         workflows.filter((w2) => w2.filename === usedWorkflowName)
           .forEach((w2) => {
             let firstJob = Object.entries(w2.jobs)[0]
             let triggerId = normalizeName(w2.filename.concat("workflow_call"))
-            //graph.addEdge(job.nodeId, triggerId, { label: jobName, style: "dashed", constraint: false, lhead: w2.clusterId })
             graph.addEdge(job.nodeId, triggerId, { style: "dashed", constraint: true, lhead: w2.clusterId })
             graph.getNode(job.nodeId).set("style", "dashed")
           })
@@ -84,7 +88,6 @@ async function main() {
           needs = job.needs
         }
         needs.forEach(need => {
-          //console.log(workflow.filename + " " + need)
           let needJob = workflow.jobs[need].nodeId
           graph.addEdge(needJob, job.nodeId)
         })
@@ -96,6 +99,16 @@ async function main() {
 
 function normalizeName(name) {
   return name.replaceAll(".", "_").replaceAll("-", "_")
+}
+
+function getReusedWorkflow(job) {
+  if (job.uses !== undefined && job.uses.includes("./")) {
+    let idx = job.uses.lastIndexOf('/');
+    let usedWorkflowName = job.uses.substring(idx + 1);
+    return usedWorkflowName
+  } else {
+    return null
+  }
 }
 async function readWorkflows(dir) {
   const files = fs.readdirSync(dir);

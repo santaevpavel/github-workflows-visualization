@@ -16,6 +16,7 @@ async function main() {
   graph.set("rankdir", "LR")
   graph.set("compound", "true")
   graph.set("ranksep", 3)
+  graph.set("margin", 30)
   
   // Adding workflow
   workflows.forEach(workflow => {
@@ -24,6 +25,7 @@ async function main() {
     graph.addCluster(workflow.clusterId)
     graph.getCluster(workflow.clusterId).set("style", "filled")
     graph.getCluster(workflow.clusterId).set(`label`, `${workflow.name}\n(${workflow.filename})`)
+    graph.getCluster(workflow.clusterId).set(`margin`, 20)
   })
   // Adding triggers
   workflows.forEach(workflow => {
@@ -57,8 +59,13 @@ async function main() {
       } else {
         jobLabel = jobLabel + "\n(" + reusedWorkflow + ")"
       }
-      graph.getCluster(workflow.clusterId)
-        .addNode(job.nodeId, { label: jobLabel, width: 3 })
+      let jobNodeAttributes = {
+        label: jobLabel,
+        width: 3,
+        fillcolor: "#ffffff99",
+        style: "filled"
+      }
+      graph.getCluster(workflow.clusterId).addNode(job.nodeId, jobNodeAttributes)
     })
   })
   // Adding dependencies
@@ -71,7 +78,7 @@ async function main() {
             let firstJob = Object.entries(w2.jobs)[0]
             let triggerId = normalizeName(w2.filename.concat("workflow_call"))
             graph.addEdge(job.nodeId, triggerId, { style: "dashed", constraint: true, lhead: w2.clusterId })
-            graph.getNode(job.nodeId).set("style", "dashed")
+            graph.getNode(job.nodeId).set("style", "filled,dashed")
           })
       }
     })

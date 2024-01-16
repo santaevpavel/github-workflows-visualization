@@ -4,6 +4,10 @@ const YAML = require('yaml');
 const path = require('path');
 const util = require('util')
 const graphviz = require('graphviz');
+
+const isDrawReusedWorkflowDepenencies = true
+const isDrawWokflowsWithoutDependences = true
+
 async function main() {
   let argv = minimist(process.argv.slice(1));
   if (argv.i === undefined) {
@@ -12,23 +16,28 @@ async function main() {
   }
   let workflows = await readWorkflows(argv.i)
   let graph = graphviz.digraph("G");
+
+  workflows.forEach(workflow => {
+    workflow.clusterId = "cluster_".concat(normalizeName(workflow.filename))
+  })
+  setIncluded(workflows)
+
   graph.set("layout", "dot")
   graph.set("rankdir", "LR")
   graph.set("compound", "true")
   graph.set("ranksep", 3)
   graph.set("margin", 30)
-  
+
   // Adding workflow
-  workflows.forEach(workflow => {
-    //console.log(JSON.stringify(w.filename))
-    workflow.clusterId = "cluster_".concat(normalizeName(workflow.filename))
+  workflows.filter(workflow => workflow.isIncluded).forEach(workflow => {
     graph.addCluster(workflow.clusterId)
     graph.getCluster(workflow.clusterId).set("style", "filled")
     graph.getCluster(workflow.clusterId).set(`label`, `${workflow.name}\n(${workflow.filename})`)
     graph.getCluster(workflow.clusterId).set(`margin`, 20)
+    graph.getCluster(workflow.clusterId).set(`fontsize`, "18")
   })
   // Adding triggers
-  workflows.forEach(workflow => {
+  workflows.filter(workflow => workflow.isIncluded).forEach(workflow => {
     var triggers = []
     for (const on in workflow.on) {
       let triggerId = normalizeName(workflow.filename.concat(on))
@@ -44,7 +53,7 @@ async function main() {
     }
   })
   // Adding jobs
-  workflows.forEach(workflow => {
+  workflows.filter(workflow => workflow.isIncluded).forEach(workflow => {
     Object.entries(workflow.jobs).forEach(([jobName, job]) => {
       job.nodeId = normalizeName(workflow.filename.concat(jobName))
       let jobLabel = ""
@@ -69,7 +78,7 @@ async function main() {
     })
   })
   // Adding dependencies
-  workflows.forEach(workflow => {
+  workflows.filter(workflow => workflow.isIncluded).forEach(workflow => {
     Object.entries(workflow.jobs).forEach(([jobName, job]) => {
       let usedWorkflowName = getReusedWorkflow(job);
       if (usedWorkflowName !== null) {
@@ -77,7 +86,9 @@ async function main() {
           .forEach((w2) => {
             let firstJob = Object.entries(w2.jobs)[0]
             let triggerId = normalizeName(w2.filename.concat("workflow_call"))
-            graph.addEdge(job.nodeId, triggerId, { style: "dashed", constraint: true, lhead: w2.clusterId })
+            if (isDrawReusedWorkflowDepenencies) {
+              graph.addEdge(job.nodeId, triggerId, { style: "dashed", constraint: true, lhead: w2.clusterId, color: "#777777" })
+            }
             graph.getNode(job.nodeId).set("style", "filled,dashed")
           })
       }
@@ -102,6 +113,27 @@ async function main() {
     })
   })
   console.log(graph.to_dot());
+}
+
+function setIncluded(workflows) {
+  let includedWorkflows = []
+  workflows.forEach(workflow => {
+    Object.entries(workflow.jobs).forEach(([jobName, job]) => {
+      let usedWorkflowName = getReusedWorkflow(job);
+      if (usedWorkflowName !== null) {
+        workflows.filter((w2) => w2.filename === usedWorkflowName)
+          .forEach((w2) => {
+            let firstJob = Object.entries(w2.jobs)[0]
+            let triggerId = normalizeName(w2.filename.concat("workflow_call"))
+            includedWorkflows.push(w2.clusterId)
+            includedWorkflows.push(workflow.clusterId)
+          })
+      }
+    })
+  })
+  workflows.forEach(workflow => {
+    workflow.isIncluded = isDrawWokflowsWithoutDependences || includedWorkflows.includes(workflow.clusterId)
+  })
 }
 
 function normalizeName(name) {
